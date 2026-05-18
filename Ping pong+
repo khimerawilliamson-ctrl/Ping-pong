@@ -1,0 +1,364 @@
+import pygame
+import sys
+
+pygame.init()
+
+# ===================================
+# SCREEN
+# ===================================
+WIDTH = 720
+HEIGHT = 1280
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Pong Plus")
+
+clock = pygame.time.Clock()
+
+# ===================================
+# COLORS
+# ===================================
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+
+# ===================================
+# FONT
+# ===================================
+font = pygame.font.SysFont("Arial", 55)
+
+# ===================================
+# GAME STATES
+# ===================================
+MENU = "menu"
+DIFFICULTY = "difficulty"
+SETTINGS = "settings"
+PLAYING = "playing"
+
+game_state = MENU
+
+# ===================================
+# LANGUAGE
+# ===================================
+language = "EN"
+
+text_data = {
+    "EN": {
+        "play": "PLAY",
+        "settings": "SETTINGS",
+        "quit": "QUIT",
+        "easy": "EASY",
+        "medium": "MEDIUM",
+        "hard": "HARD",
+        "language": "LANGUAGE"
+    },
+
+    "ES": {
+        "play": "JUGAR",
+        "settings": "AJUSTES",
+        "quit": "SALIR",
+        "easy": "FACIL",
+        "medium": "MEDIO",
+        "hard": "DIFICIL",
+        "language": "IDIOMA"
+    }
+}
+
+# ===================================
+# BUTTONS
+# ===================================
+
+# Main menu buttons
+play_button = pygame.Rect(210, 400, 300, 80)
+settings_button = pygame.Rect(210, 520, 300, 80)
+quit_button = pygame.Rect(210, 640, 300, 80)
+
+# Difficulty buttons
+easy_button = pygame.Rect(210, 400, 300, 80)
+medium_button = pygame.Rect(210, 520, 300, 80)
+hard_button = pygame.Rect(210, 640, 300, 80)
+
+# Settings buttons
+language_button = pygame.Rect(160, 500, 400, 80)
+
+# Back button
+back_button = pygame.Rect(30, 30, 80, 80)
+
+# ===================================
+# PADDLES
+# ===================================
+PADDLE_WIDTH = 25
+PADDLE_HEIGHT = 180
+
+player = pygame.Rect(
+    40,
+    HEIGHT // 2 - PADDLE_HEIGHT // 2,
+    PADDLE_WIDTH,
+    PADDLE_HEIGHT
+)
+
+ai = pygame.Rect(
+    WIDTH - 65,
+    HEIGHT // 2 - PADDLE_HEIGHT // 2,
+    PADDLE_WIDTH,
+    PADDLE_HEIGHT
+)
+
+# ===================================
+# BALL
+# ===================================
+BALL_SIZE = 35
+
+ball = pygame.Rect(
+    WIDTH // 2,
+    HEIGHT // 2,
+    BALL_SIZE,
+    BALL_SIZE
+)
+
+ball_speed_x = 7
+ball_speed_y = 7
+
+# ===================================
+# AI
+# ===================================
+ai_speed = 5
+
+# ===================================
+# RESET BALL
+# ===================================
+def reset_ball():
+
+    global ball_speed_x
+
+    ball.center = (WIDTH // 2, HEIGHT // 2)
+
+    ball_speed_x *= -1
+
+# ===================================
+# DRAW BUTTON
+# ===================================
+def draw_button(rect, text):
+
+    pygame.draw.rect(screen, WHITE, rect, border_radius=12)
+
+    text_surface = font.render(text, True, BLACK)
+
+    screen.blit(
+        text_surface,
+        (
+            rect.centerx - text_surface.get_width() // 2,
+            rect.centery - text_surface.get_height() // 2
+        )
+    )
+
+# ===================================
+# DRAW BACK BUTTON
+# ===================================
+def draw_back_button():
+
+    pygame.draw.rect(screen, WHITE, back_button, border_radius=12)
+
+    arrow_font = pygame.font.SysFont("Arial", 70)
+
+    arrow_text = arrow_font.render("<", True, BLACK)
+
+    screen.blit(
+        arrow_text,
+        (
+            back_button.centerx - arrow_text.get_width() // 2,
+            back_button.centery - arrow_text.get_height() // 2 - 5
+        )
+    )
+
+# ===================================
+# MAIN LOOP
+# ===================================
+while True:
+
+    # ===================================
+    # EVENTS
+    # ===================================
+    for event in pygame.event.get():
+
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+        # ===================================
+        # TOUCH / MOUSE
+        # ===================================
+        if event.type == pygame.MOUSEBUTTONDOWN:
+
+            mouse_pos = pygame.mouse.get_pos()
+
+            # ===================================
+            # BACK BUTTON
+            # ===================================
+            if game_state != MENU:
+
+                if back_button.collidepoint(mouse_pos):
+
+                    if game_state == PLAYING:
+                        game_state = MENU
+
+                    elif game_state == SETTINGS:
+                        game_state = MENU
+
+                    elif game_state == DIFFICULTY:
+                        game_state = MENU
+
+            # ===================================
+            # MAIN MENU
+            # ===================================
+            if game_state == MENU:
+
+                if play_button.collidepoint(mouse_pos):
+                    game_state = DIFFICULTY
+
+                elif settings_button.collidepoint(mouse_pos):
+                    game_state = SETTINGS
+
+                elif quit_button.collidepoint(mouse_pos):
+                    pygame.quit()
+                    sys.exit()
+
+            # ===================================
+            # DIFFICULTY MENU
+            # ===================================
+            elif game_state == DIFFICULTY:
+
+                if easy_button.collidepoint(mouse_pos):
+                    ai_speed = 4
+                    game_state = PLAYING
+
+                elif medium_button.collidepoint(mouse_pos):
+                    ai_speed = 7
+                    game_state = PLAYING
+
+                elif hard_button.collidepoint(mouse_pos):
+                    ai_speed = 11
+                    game_state = PLAYING
+
+            # ===================================
+            # SETTINGS
+            # ===================================
+            elif game_state == SETTINGS:
+
+                if language_button.collidepoint(mouse_pos):
+
+                    if language == "EN":
+                        language = "ES"
+                    else:
+                        language = "EN"
+
+    # ===================================
+    # GAMEPLAY
+    # ===================================
+    if game_state == PLAYING:
+
+        # Touch controls
+        if pygame.mouse.get_pressed()[0]:
+
+            touch_y = pygame.mouse.get_pos()[1]
+
+            player.centery = touch_y
+
+        # Keep paddle on screen
+        if player.top < 0:
+            player.top = 0
+
+        if player.bottom > HEIGHT:
+            player.bottom = HEIGHT
+
+        # AI movement
+        if ai.centery < ball.centery:
+            ai.y += ai_speed
+
+        if ai.centery > ball.centery:
+            ai.y -= ai_speed
+
+        # Move ball
+        ball.x += ball_speed_x
+        ball.y += ball_speed_y
+
+        # Bounce top and bottom
+        if ball.top <= 0 or ball.bottom >= HEIGHT:
+            ball_speed_y *= -1
+
+        # Paddle collision
+        if ball.colliderect(player):
+            ball_speed_x = abs(ball_speed_x)
+
+        if ball.colliderect(ai):
+            ball_speed_x = -abs(ball_speed_x)
+
+        # Reset ball
+        if ball.left <= 0:
+            reset_ball()
+
+        if ball.right >= WIDTH:
+            reset_ball()
+
+    # ===================================
+    # DRAW
+    # ===================================
+    screen.fill(BLACK)
+
+    # ===================================
+    # MENU
+    # ===================================
+    if game_state == MENU:
+
+        draw_button(play_button, text_data[language]["play"])
+        draw_button(settings_button, text_data[language]["settings"])
+        draw_button(quit_button, text_data[language]["quit"])
+
+    # ===================================
+    # DIFFICULTY
+    # ===================================
+    elif game_state == DIFFICULTY:
+
+        draw_back_button()
+
+        draw_button(easy_button, text_data[language]["easy"])
+        draw_button(medium_button, text_data[language]["medium"])
+        draw_button(hard_button, text_data[language]["hard"])
+
+    # ===================================
+    # SETTINGS
+    # ===================================
+    elif game_state == SETTINGS:
+
+        draw_back_button()
+
+        draw_button(
+            language_button,
+            text_data[language]["language"] + ": " + language
+        )
+
+    # ===================================
+    # PLAYING
+    # ===================================
+    elif game_state == PLAYING:
+
+        draw_back_button()
+
+        # Center line
+        pygame.draw.line(
+            screen,
+            WHITE,
+            (WIDTH // 2, 0),
+            (WIDTH // 2, HEIGHT),
+            4
+        )
+
+        # Paddles
+        pygame.draw.rect(screen, WHITE, player, border_radius=12)
+        pygame.draw.rect(screen, WHITE, ai, border_radius=12)
+
+        # Ball
+        pygame.draw.ellipse(screen, WHITE, ball)
+
+    # Update display
+    pygame.display.flip()
+
+    clock.tick(60)
