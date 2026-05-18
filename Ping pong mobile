@@ -1,0 +1,168 @@
+import pygame
+import sys
+
+# Start pygame
+pygame.init()
+
+# Phone screen size
+WIDTH = 720
+HEIGHT = 1280
+
+# Colors
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+
+# Create screen
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Retro Mobile Pong")
+
+# Clock
+clock = pygame.time.Clock()
+
+# Paddle settings
+PADDLE_WIDTH = 25
+PADDLE_HEIGHT = 180
+
+# Player paddle (left side)
+player = pygame.Rect(
+    60,
+    HEIGHT // 2 - PADDLE_HEIGHT // 2,
+    PADDLE_WIDTH,
+    PADDLE_HEIGHT
+)
+
+# AI paddle (right side)
+ai = pygame.Rect(
+    WIDTH - 85,
+    HEIGHT // 2 - PADDLE_HEIGHT // 2,
+    PADDLE_WIDTH,
+    PADDLE_HEIGHT
+)
+
+# Ball settings
+BALL_SIZE = 35
+
+ball = pygame.Rect(
+    WIDTH // 2 - BALL_SIZE // 2,
+    HEIGHT // 2 - BALL_SIZE // 2,
+    BALL_SIZE,
+    BALL_SIZE
+)
+
+ball_speed_x = 7
+ball_speed_y = 7
+
+# Scores
+player_score = 0
+ai_score = 0
+
+# Font
+font = pygame.font.SysFont("Arial", 70)
+
+# Main game loop
+while True:
+
+    # Quit game
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+    # -------------------------
+    # PLAYER TOUCH CONTROLS
+    # -------------------------
+    if pygame.mouse.get_pressed()[0]:
+
+        # Get finger position
+        touch_x, touch_y = pygame.mouse.get_pos()
+
+        # Only move paddle if touching left side
+        if touch_x < WIDTH // 2:
+            player.centery = touch_y
+
+    # Keep player paddle on screen
+    if player.top < 0:
+        player.top = 0
+
+    if player.bottom > HEIGHT:
+        player.bottom = HEIGHT
+
+    # -------------------------
+    # AI MOVEMENT
+    # -------------------------
+    ai_speed = 6
+
+    if ai.centery < ball.centery:
+        ai.y += ai_speed
+
+    if ai.centery > ball.centery:
+        ai.y -= ai_speed
+
+    # Keep AI paddle on screen
+    if ai.top < 0:
+        ai.top = 0
+
+    if ai.bottom > HEIGHT:
+        ai.bottom = HEIGHT
+
+    # -------------------------
+    # BALL MOVEMENT
+    # -------------------------
+    ball.x += ball_speed_x
+    ball.y += ball_speed_y
+
+    # Bounce off top and bottom
+    if ball.top <= 0 or ball.bottom >= HEIGHT:
+        ball_speed_y *= -1
+
+    # Bounce off paddles
+    if ball.colliderect(player):
+        ball_speed_x = abs(ball_speed_x)
+
+    if ball.colliderect(ai):
+        ball_speed_x = -abs(ball_speed_x)
+
+    # -------------------------
+    # SCORING
+    # -------------------------
+    if ball.left <= 0:
+        ai_score += 1
+        ball.center = (WIDTH // 2, HEIGHT // 2)
+
+    if ball.right >= WIDTH:
+        player_score += 1
+        ball.center = (WIDTH // 2, HEIGHT // 2)
+
+    # -------------------------
+    # DRAW EVERYTHING
+    # -------------------------
+    screen.fill(BLACK)
+
+    # Center line
+    pygame.draw.line(
+        screen,
+        WHITE,
+        (WIDTH // 2, 0),
+        (WIDTH // 2, HEIGHT),
+        5
+    )
+
+    # Draw paddles
+    pygame.draw.rect(screen, WHITE, player, border_radius=12)
+    pygame.draw.rect(screen, WHITE, ai, border_radius=12)
+
+    # Draw ball
+    pygame.draw.ellipse(screen, WHITE, ball)
+
+    # Draw scores
+    player_text = font.render(str(player_score), True, WHITE)
+    ai_text = font.render(str(ai_score), True, WHITE)
+
+    screen.blit(player_text, (WIDTH // 4, 40))
+    screen.blit(ai_text, (WIDTH * 3 // 4, 40))
+
+    # Update display
+    pygame.display.flip()
+
+    # FPS
+    clock.tick(60)
